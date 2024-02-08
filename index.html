@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+    <title>Image Splitter</title>
+    <link rel="stylesheet" type="text/css" href="./style.css" />
+</head>  
+<body>
+    <main>
+        <input id="file-holder" accept="image/*" type="file" />
+        <div id="previews">
+        </div>
+        <div class="seperators-input">
+            <div id="split-x-input">
+                X:<input type="number" placeholder="Enter total horizontal split" /> <input type="range" min="1" max="50" />
+            </div>
+            <div id="split-y-input">
+                Y:<input type="number" placeholder="Enter total vertical split" /><input type="range" min="1" max="50" />
+            </div>
+        </div>
+        <a id="download-link" style="display:none"></a>
+        <button onclick="downloadAllImg()" >DOWNLOAD</button>
+    </main>
+
+    <script type="text/javascript">
+        // elements
+        const fileHolder = document.querySelector("#file-holder");
+        const canvasContainer = document.querySelector("#previews");
+        const splitXRange = document.querySelector("#split-x-input input[type=range]");
+        const splitYRange = document.querySelector("#split-y-input input[type=range]");
+        const splitXNumber = document.querySelector("#split-x-input input[type=number]");
+        const splitYNumber = document.querySelector("#split-y-input input[type=number]");
+        
+        
+        // image object for drawing
+        const imageCanvas = new Image();
+        let src; 
+
+        
+        //total splits
+        const SPLIT_X_LIMIT = 50;
+        const SPLIT_Y_LIMIT = 50;
+
+        let total_split_x = 3;
+        let total_split_y = 2;
+
+        splitXRange.setAttribute("max",SPLIT_X_LIMIT);
+        splitYRange.setAttribute("max",SPLIT_Y_LIMIT);
+
+        splitXNumber.value = total_split_x;
+        splitYNumber.value = total_split_y;
+
+
+        fileHolder.addEventListener("change",function(event) {
+            const image = event.target.files[0];
+            let newSrc = URL.createObjectURL(image);
+
+            if (newSrc != src) {
+                URL.revokeObjectURL(src);
+                src = newSrc;
+            }
+
+            previewResult();
+        });
+        
+        splitXRange.addEventListener("change",function() {
+            splitXNumber.value = this.value;
+            updateTotalSplit(this.value,0);
+        });
+
+        splitYRange.addEventListener("change",function() {
+            splitYNumber.value = this.value;
+            updateTotalSplit(0,this.value);
+        });
+
+        splitXNumber.addEventListener("change",function() {
+            let x = this.value;
+            this.value = (x < 1) ?
+                             1 :
+                               (x > SPLIT_X_LIMIT) ? 
+                               SPLIT_X_LIMIT : x;
+           
+            updateTotalSplit(this.value,0);
+        });
+
+        splitYNumber.addEventListener("change",function() {
+            let y = this.value;
+            this.value = (y < 1) ?
+                             1 :
+                               (y > SPLIT_Y_LIMIT) ? 
+                               SPLIT_Y_LIMIT : y;
+           
+            updateTotalSplit(0,this.value);
+        });
+
+
+        function updateTotalSplit(x,y) {
+            if (x > 0 && x <= SPLIT_X_LIMIT)
+                total_split_x = x;
+            if (y > 0 && y <= SPLIT_Y_LIMIT)
+                total_split_y = y;
+
+            previewResult();
+        }
+
+        function previewResult() {
+            imageCanvas.src = src;
+            imageCanvas.onload = function() {
+                removeAllCanvas();
+
+                const sw = this.width / total_split_x;
+                const sh = this.height / total_split_y; 
+
+                for (let y = 0;y < total_split_y;y++) {
+                    for (let x = 0;x < total_split_x;x++) {
+                        const canvas = document.createElement("canvas");
+                        canvas.width = canvasContainer.clientWidth / total_split_x;
+                        canvas.height = canvasContainer.clientHeight / total_split_y;
+
+                        const context = canvas.getContext("2d");
+                        
+                        context.drawImage(imageCanvas,x * sw,y * sh,sw,sh,0,0,canvas.width,canvas.height);
+
+                        canvasContainer.appendChild(canvas);
+                    }
+                }
+            }
+        }
+
+        function removeAllCanvas() {
+            const canvasses = document.querySelectorAll("#previews canvas");
+            for (let i = 0;i < canvasses.length;i++) canvasses[i].remove();
+        }
+
+        function downloadAllImg() {
+           const canvasses = document.querySelectorAll("#previews canvas");
+           const downloadLink = document.querySelector("#download-link");
+            
+
+           const dividedWidth = imageCanvas.width / total_split_x;
+           const dividedHeight = imageCanvas.height / total_split_y;
+           for (let i = 0;i < canvasses.length;i++) {
+                setTimeout(() => {
+                    const canvas = canvasses[i];
+
+                    const newCanvas = document.createElement("canvas");
+                    newCanvas.width = dividedWidth;
+                    newCanvas.height = dividedHeight;
+                    const newCanvasContext = newCanvas.getContext("2d");
+                    newCanvasContext.drawImage(canvas,0,0,dividedWidth,dividedHeight);
+                    const canvasData = newCanvas.toDataURL("image/jpg");
+
+                    canvasData.replace("img/jpg","image/octet-stream");
+                    downloadLink.setAttribute("download","split-image-" + i);
+                    downloadLink.setAttribute("href",canvasData);
+                    downloadLink.click();
+                },100 * i);
+           }
+        }
+
+        window.addEventListener("resize",function() {
+            previewResult();
+        });
+    </script>
+</body>
+</html>

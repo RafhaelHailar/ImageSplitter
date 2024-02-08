@@ -1,0 +1,27 @@
+:root {
+    --prevSize: calc(20vw * 2);
+}
+
+body {
+    padding: 0;
+    margin: 0;
+}
+
+main {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+#previews {
+    display: flex;
+    flex-wrap: wrap;
+    width: var(--prevSize);
+    height: var(--prevSize);
+    justify-content: center;
+    border: 1px solid red;
+}
+
+canvas {
+    box-shadow: 0 0 1px red, 0 0 2px red;
+}
